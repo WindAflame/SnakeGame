@@ -1,9 +1,18 @@
-moveSnake = function(direction)
-  snakehead = snake[0]
-  snake[0].sprite = "body"
+initSnake = function(x, y)
+  snakeState = object
+    snake = [makeSnakePart(x, y, true)]
+    grow = false
+  end
+  return snakeState
+end
+
+moveSnake = function(snakeState, direction, gameState, foodState, scoreState)
+  snakehead = snakeState.snake[0]
+  snakeState.snake[0].sprite = "body"
   heady = snakehead.y
   headx = snakehead.x
-  
+  board = gameState.board
+
   // Déplacement de la tête du serpent sur la grille de jeu
   if direction == 1 then
      heady = (heady + 1) % board.height
@@ -13,35 +22,41 @@ moveSnake = function(direction)
     if (heady - 1) < 0 then heady = board.height-1 else heady = (heady - 1) end
   else
      if (headx - 1) < 0 then headx = board.width-1 else headx = (headx - 1) end
-    
+
   end
-  
+
   // Vérification si le serpent se mord la queue
-  if checkIfSnakePart(headx, heady) then 
-    lose = true
+  if checkIfSnakePart(headx, heady) then
+    gameState.lose = true
   else
     // Vérification si le serpent a mangé une pomme
-    if headx == snackx and heady == snacky then
-      score += 1
-      makeSnack()
-      grow = true
-      if (score % 2) and snakeSpeed > minSpeed then
-        snakeSpeed -= 1
+    if headx == foodState.x and heady == foodState.y then
+      addScore(scoreState, 1)
+      makeSnack(foodState, board)
+      snakeState.grow = true
+      if (scoreState.value % 2) and gameState.snakeSpeed > gameState.minSpeed then
+        gameState.snakeSpeed -= 1
       end
     end
-    
-    snake = [makeSnakePart(headx, heady, true)] + snake
-    if grow then
-      grow = false
+
+    snakeState.snake = [makeSnakePart(headx, heady, true)] + snakeState.snake
+    if snakeState.grow then
+      snakeState.grow = false
     else
-      snakeTail = snake[snake.length-1]
+      snakeTail = snakeState.snake[snakeState.snake.length-1]
       board.set(snakeTail.x, snakeTail.y, "")
-      snake.pop()
+      snakeState.snake.pop()
     end
-    
-    for snakePart in snake
+
+    for snakePart in snakeState.snake
       board.set(snakePart.x, snakePart.y,snakePart.sprite)
     end
+  end
+end
+
+drawSnake = function(snakeState, board)
+  for snakePart in snakeState.snake
+    board.set(snakePart.x, snakePart.y, snakePart.sprite)
   end
 end
 
@@ -57,22 +72,6 @@ makeSnakePart = function(xpos, ypos, head)
 end
 
 checkIfSnakePart = function(x, y)
+  board = maps["board"]
   return board.get(x,y) == "body"
-end
-
-// Permet de placer la pomme sur l'écran de jeu
-// Vérifie si la pomme n'est pas sur le serpent, sinon il est replacé
-makeSnack = function()
-   snackx = getRandomX()
-   snacky = getRandomY()
-   if checkIfSnakePart(snackx,snacky) then makeSnack() end
-end
-
-
-getRandomX = function()
-  return random.nextInt(board.width)
-end
-
-getRandomY = function()
-  return random.nextInt(board.height)
 end
